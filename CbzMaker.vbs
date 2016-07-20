@@ -13,19 +13,21 @@ reg.IgnoreCase = True
 reg.Global = True
 
 Function createCbz()
+reg.Pattern = "\.png|\.jpg|\.jpeg|\.gif|\.webp|\.info|\.txt"
 	For Each folder in colFolders
 		name = Replace(folder.Name, " ", "_")
 		name = Replace(name, "-", "_")
 		comic = true
 		For Each file in folder.Files
 			'Wscript.Echo file.Name
-			If InStr(file.Name, ".png") = 0 AND InStr(file.Name, ".gif") = 0 AND InStr(file.Name, ".jpg") = 0 AND InStr(file.Name, ".jpeg") = 0 Then
-				'Wscript.Echo "False"
+			If Not reg.Test(file.Name) Then
 				comic = false
+			Else 
+				shell.run "cmd.exe /C cd " & folder.Path & " && nconvert -ratio -overwrite -D -out webp -rtype hanning -resize 320 480 " & Chr(34) & file.Path & Chr(34), 0, true
 			End If
 		Next
 		If comic = true Then 
-			shell.run "cmd.exe /C cd " & folder.Path & " && 7z a -tzip -mx7 " & Chr(34) & folder.Path & ".cbz" & Chr(34) & " *" & Chr(34), 0
+			shell.run "cmd.exe /C cd " & folder.Path & " && 7z a -tzip -mx7 " & Chr(34) & folder.Path & ".cbz" & Chr(34) & " *" & Chr(34), 0, true
 		End If
 	Next
 End Function
@@ -42,7 +44,7 @@ Function Rename(collection)
 			reg.Pattern = "\[.*?\]|\{.*?\}"
 			name = reg.Replace(name, "")
 			'removes comic events
-			reg.Pattern = "\(C[0-9][0-9]?\)|\(COMIC.*?\)|\(SC.*?\)"
+			reg.Pattern = "SC\d\d|C\d\d|\(C[0-9][0-9]?\)|\(COMIC.*?\)|\(SC.*?\)"
 			name = reg.Replace(name, "")
 			'removes english tags
 			reg.Pattern = "\(eng.*?\)|\(ENG.*?\)|\(Eng.*?\)"
@@ -53,6 +55,8 @@ Function Rename(collection)
 			'removes double+ spaces that result from previous edits
 			reg.Pattern = "\s{2,}"
 			name = reg.Replace(name, " ")
+			reg.Pattern = " (Complete)"
+			name = reg.Replace(name, ".")
 			reg.Pattern = "\s+\."
 			name = reg.Replace(name, ".")
 			name = Trim(name)
@@ -78,3 +82,5 @@ createCbz()
 Set colFiles = dir.Files
 
 Rename(colFiles)
+
+Wscript.Echo "All done!"
